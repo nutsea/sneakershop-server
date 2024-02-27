@@ -15,13 +15,15 @@ class ImageController {
                 if (!Array.isArray(img)) {
                     let fileName = uuid.v4() + ".jpg"
                     img.mv(path.resolve(__dirname, '..', 'static', fileName))
-                    const image = await Image.create({ img: fileName, item_id })
+                    // const image = await Image.create({ img: fileName, item_id })
+                    const image = await Image.create({ name: fileName, item_id })
                     return res.json(image)
                 } else {
                     for (let i of img) {
                         let fileName = uuid.v4() + ".jpg"
                         i.mv(path.resolve(__dirname, '..', 'static', fileName))
-                        await Image.create({ img: fileName, item_id })
+                        // await Image.create({ img: fileName, item_id })
+                        await Image.create({ name: fileName, item_id })
                     }
                     return res.json(item_id)
                 }
