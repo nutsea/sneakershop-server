@@ -20,7 +20,8 @@ const Item = sequelize.define('items', {
     category: {type: DataTypes.STRING, allowNull: false},
     model: {type: DataTypes.STRING},
     color: {type: DataTypes.STRING},
-    img: {type: DataTypes.STRING}
+    img: {type: DataTypes.STRING},
+    tags: {type: DataTypes.TEXT}
 })
 
 const Image = sequelize.define('images', {

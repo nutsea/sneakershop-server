@@ -26,8 +26,11 @@ class ItemController {
                 size_clo,
                 category,
                 model,
-                color
+                color,
+                tags
             } = req.body
+            // let trueCount = count > 0 ? count
+            let trueSale = sale && sale > 0 ? sale : null
             if (req.files && 'img' in req.files) {
                 const { img } = req.files
                 let fileName = uuid.v4() + ".jpg"
@@ -38,7 +41,7 @@ class ItemController {
                     name,
                     description,
                     price,
-                    sale,
+                    trueSale,
                     count,
                     size_eu,
                     size_ru,
@@ -49,7 +52,8 @@ class ItemController {
                     category,
                     model,
                     color,
-                    img: fileName
+                    img: fileName,
+                    tags
                 })
                 return res.json(item)
             } else {
@@ -60,7 +64,7 @@ class ItemController {
                         name,
                         description,
                         price,
-                        sale,
+                        trueSale,
                         count,
                         size_eu,
                         size_ru,
@@ -70,7 +74,8 @@ class ItemController {
                         size_clo,
                         category,
                         model,
-                        color
+                        color,
+                        tags
                     })
                     return res.json(item)
                 } else {
@@ -80,7 +85,7 @@ class ItemController {
                         name,
                         description,
                         price,
-                        sale,
+                        trueSale,
                         count: 1,
                         size_eu,
                         size_ru,
@@ -90,7 +95,8 @@ class ItemController {
                         size_clo,
                         category,
                         model,
-                        color
+                        color,
+                        tags
                     })
                     return res.json(item)
                 }
@@ -115,7 +121,8 @@ class ItemController {
                 size_type,
                 category,
                 model,
-                color
+                color,
+                tags
             } = req.body
             const item = await Item.findOne({ where: { id } })
             if (code) item.code = code
@@ -131,6 +138,7 @@ class ItemController {
             if (color) item.color = color
             if (count) item.count = count
             else item.count = 1
+            if (tags) item.tags = tags
             if (req.files && 'img' in req.files) {
                 const { img } = req.files
                 let fileName = uuid.v4() + ".jpg"
@@ -205,8 +213,76 @@ class ItemController {
     async getThreeSearched(req, res, next) {
         try {
             const { search } = req.query
-            console.log(search)
-            return res.json('done')
+            const searchWord = search.toLowerCase()
+            if (search.length > 0) {
+                let itemsCodes = await Item.findAll({
+                    where: {
+                        [Op.and]: [
+                            {
+                                [Op.or]: [
+                                    {
+                                        code: { [Op.iLike]: `%${searchWord}%` }
+                                    },
+                                    {
+                                        name: { [Op.iLike]: `%${searchWord}%` }
+                                    },
+                                    {
+                                        brand: { [Op.iLike]: `%${searchWord}%` }
+                                    },
+                                    {
+                                        description: { [Op.iLike]: `%${searchWord}%` }
+                                    },
+                                    {
+                                        tags: { [Op.iLike]: `%${searchWord}%` }
+                                    }
+                                ]
+                            }
+
+                        ]
+                        // name: { [Op.iLike]: `%${search}%` },
+                        // brand: { [Op.iLike]: `%${search}%` },
+                        // description: { [Op.iLike]: `%${search}%` },
+                        // tags: { [Op.iLike]: `%${search}%` }
+                    },
+                    attributes: ['code'],
+                    group: ['code'],
+                    limit: 3
+                })
+                let items = []
+                for (let i of itemsCodes) {
+                    let item = await Item.findOne({ where: { code: i.code } })
+                    items.push(item)
+                }
+                for (let i of items) {
+                    const same = await Item.findAll({ where: { code: i.code } })
+                    let min = i.sale ? i.sale : i.price
+                    for (let j of same) {
+                        if (j.count > 0) {
+                            if (j.sale && j.sale < min) {
+                                min = j.sale
+                            } else {
+                                if (j.price < min) {
+                                    min = j.price
+                                }
+                            }
+                        }
+                    }
+                    i.price = min
+                    i.sale = min
+                }
+                return res.json(items)
+            } else {
+                return res.json([])
+            }
+        } catch (e) {
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async getAllAdmin(req, res, next) {
+        try {
+            const items = await Item.findAll()
+            return res.json(items)
         } catch (e) {
             return next(ApiError.badRequest(e.message))
         }
@@ -214,7 +290,7 @@ class ItemController {
 
     async getAll(req, res, next) {
         try {
-            let { category, brands, models, colors, sizes_eu, sizes_ru, sizes_us, sizes_uk, sizes_sm, sizes_clo, priceMin, priceMax, sort, limit, page, in_stock, isModelsSet, isShoesSet, isClothesSet } = req.query
+            let { category, brands, models, colors, sizes_eu, sizes_ru, sizes_us, sizes_uk, sizes_sm, sizes_clo, priceMin, priceMax, sort, limit, page, in_stock, isModelsSet, isShoesSet, isClothesSet, search } = req.query
             let categoriesArr = []
             if (category === undefined || category === 'all') {
                 categoriesArr = ['shoes', 'clothes', 'accessories']
@@ -239,6 +315,7 @@ class ItemController {
             page = page || 1
             limit = limit || 18
             let offset = page * limit - limit
+            let searchWord = search ? search.toLowerCase() : ''
             const items = await Item.findAndCountAll({
                 attributes: [
                     'code',
@@ -262,58 +339,127 @@ class ItemController {
                     [Sequelize.fn('array_agg', Sequelize.col('createdAt')), 'createdAt']
                 ],
                 where: {
-                    brand: { [Op.in]: brands.map(item => item.brand) },
-                    price: {
-                        [Op.and]: [
-                            { [Op.gt]: Number(priceMin) - 1 },
-                            { [Op.lt]: Number(priceMax) + 1 }
-                        ]
-                    },
-                    ...(isShoesSet === 'true' && sizes_eu && {
-                        size_eu: { [Op.in]: sizes_eu.map(item => item.size_eu) },
-                    }),
-                    ...(isShoesSet === 'true' && sizes_ru && {
-                        size_ru: { [Op.in]: sizes_ru.map(item => item.size_ru) },
-                    }),
-                    ...(isShoesSet === 'true' && sizes_us && {
-                        size_us: { [Op.in]: sizes_us.map(item => item.size_us) },
-                    }),
-                    ...(isShoesSet === 'true' && sizes_uk && {
-                        size_uk: { [Op.in]: sizes_uk.map(item => item.size_uk) },
-                    }),
-                    ...(isShoesSet === 'true' && sizes_sm && {
-                        size_sm: { [Op.in]: sizes_sm.map(item => item.size_sm) },
-                    }),
-                    ...(isClothesSet === 'true' && sizes_clo && {
-                        size_clo: { [Op.in]: sizes_clo.map(item => item.size_clo) },
-                    }),
-                    ...(isModelsSet === 'true' && {
-                        model: { [Op.in]: models.map(item => item.model) },
-                    }),
-                    color: { [Op.in]: colors.map(item => item.color) },
-                    category: { [Op.in]: categoriesArr },
-                    [Op.or]: [
+                    [Op.and]: [
                         {
-                            category: 'shoes',
+                            [Op.or]: [
+                                {
+                                    code: { [Op.iLike]: `%${searchWord}%` }
+                                },
+                                {
+                                    name: { [Op.iLike]: `%${searchWord}%` }
+                                },
+                                {
+                                    brand: { [Op.iLike]: `%${searchWord}%` }
+                                },
+                                {
+                                    description: { [Op.iLike]: `%${searchWord}%` }
+                                },
+                                {
+                                    tags: { [Op.iLike]: `%${searchWord}%` }
+                                }
+                            ]
                         },
                         {
-                            category: 'clothes',
-                        },
-                        {
-                            category: 'accessories'
-                        },
-                        {
-                            category: 'all',
+                            brand: { [Op.in]: brands.map(item => item.brand) },
+                            price: {
+                                [Op.and]: [
+                                    { [Op.gt]: Number(priceMin) - 1 },
+                                    { [Op.lt]: Number(priceMax) + 1 }
+                                ]
+                            },
+                            ...(isShoesSet === 'true' && sizes_eu && {
+                                size_eu: { [Op.in]: sizes_eu.map(item => item.size_eu) },
+                            }),
+                            ...(isShoesSet === 'true' && sizes_ru && {
+                                size_ru: { [Op.in]: sizes_ru.map(item => item.size_ru) },
+                            }),
+                            ...(isShoesSet === 'true' && sizes_us && {
+                                size_us: { [Op.in]: sizes_us.map(item => item.size_us) },
+                            }),
+                            ...(isShoesSet === 'true' && sizes_uk && {
+                                size_uk: { [Op.in]: sizes_uk.map(item => item.size_uk) },
+                            }),
+                            ...(isShoesSet === 'true' && sizes_sm && {
+                                size_sm: { [Op.in]: sizes_sm.map(item => item.size_sm) },
+                            }),
+                            ...(isClothesSet === 'true' && sizes_clo && {
+                                size_clo: { [Op.in]: sizes_clo.map(item => item.size_clo) },
+                            }),
+                            ...(isModelsSet === 'true' && {
+                                model: { [Op.in]: models.map(item => item.model) },
+                            }),
+                            color: { [Op.in]: colors.map(item => item.color) },
+                            category: { [Op.in]: categoriesArr },
+                            [Op.or]: [
+                                {
+                                    category: 'shoes',
+                                },
+                                {
+                                    category: 'clothes',
+                                },
+                                {
+                                    category: 'accessories'
+                                },
+                                {
+                                    category: 'all',
+                                }
+                            ],
+                            count: count
                         }
-                    ],
-                    count: count
+                    ]
                 },
+                // where: {
+                //     brand: { [Op.in]: brands.map(item => item.brand) },
+                //     price: {
+                //         [Op.and]: [
+                //             { [Op.gt]: Number(priceMin) - 1 },
+                //             { [Op.lt]: Number(priceMax) + 1 }
+                //         ]
+                //     },
+                //     ...(isShoesSet === 'true' && sizes_eu && {
+                //         size_eu: { [Op.in]: sizes_eu.map(item => item.size_eu) },
+                //     }),
+                //     ...(isShoesSet === 'true' && sizes_ru && {
+                //         size_ru: { [Op.in]: sizes_ru.map(item => item.size_ru) },
+                //     }),
+                //     ...(isShoesSet === 'true' && sizes_us && {
+                //         size_us: { [Op.in]: sizes_us.map(item => item.size_us) },
+                //     }),
+                //     ...(isShoesSet === 'true' && sizes_uk && {
+                //         size_uk: { [Op.in]: sizes_uk.map(item => item.size_uk) },
+                //     }),
+                //     ...(isShoesSet === 'true' && sizes_sm && {
+                //         size_sm: { [Op.in]: sizes_sm.map(item => item.size_sm) },
+                //     }),
+                //     ...(isClothesSet === 'true' && sizes_clo && {
+                //         size_clo: { [Op.in]: sizes_clo.map(item => item.size_clo) },
+                //     }),
+                //     ...(isModelsSet === 'true' && {
+                //         model: { [Op.in]: models.map(item => item.model) },
+                //     }),
+                //     color: { [Op.in]: colors.map(item => item.color) },
+                //     category: { [Op.in]: categoriesArr },
+                //     [Op.or]: [
+                //         {
+                //             category: 'shoes',
+                //         },
+                //         {
+                //             category: 'clothes',
+                //         },
+                //         {
+                //             category: 'accessories'
+                //         },
+                //         {
+                //             category: 'all',
+                //         }
+                //     ],
+                //     count: count
+                // },
                 order: order,
                 group: ['code', 'name'],
                 limit,
                 offset
             })
-            console.log(items)
             let newItems = {
                 count: items.count.length,
                 rows: items.rows
