@@ -1,5 +1,5 @@
 const { Item, Image } = require('../models/models')
-const ApiError = require('../error/ApiError')
+const ApiError = require('../error/apiError')
 const uuid = require('uuid')
 const path = require('path')
 const fs = require('fs')
