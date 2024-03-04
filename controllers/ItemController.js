@@ -29,7 +29,6 @@ class ItemController {
                 color,
                 tags
             } = req.body
-            // let trueCount = count > 0 ? count
             let trueSale = sale && sale > 0 ? sale : null
             if (req.files && 'img' in req.files) {
                 const { img } = req.files
@@ -117,8 +116,12 @@ class ItemController {
                 price,
                 sale,
                 count,
-                size,
-                size_type,
+                size_eu,
+                size_ru,
+                size_us,
+                size_uk,
+                size_sm,
+                size_clo,
                 category,
                 model,
                 color,
@@ -131,8 +134,12 @@ class ItemController {
             if (description) item.description = description
             if (price) item.price = price
             if (sale) item.sale = sale
-            if (size) item.size = size
-            if (size_type) item.size_type = size_type
+            if (size_eu) item.size_eu = size_eu
+            if (size_ru) item.size_ru = size_ru
+            if (size_us) item.size_us = size_us
+            if (size_uk) item.size_uk = size_uk
+            if (size_sm) item.size_sm = size_sm
+            if (size_clo) item.size_clo = size_clo
             if (category) item.category = category
             if (model) item.model = model
             if (color) item.color = color
@@ -239,10 +246,6 @@ class ItemController {
                             }
 
                         ]
-                        // name: { [Op.iLike]: `%${search}%` },
-                        // brand: { [Op.iLike]: `%${search}%` },
-                        // description: { [Op.iLike]: `%${search}%` },
-                        // tags: { [Op.iLike]: `%${search}%` }
                     },
                     attributes: ['code'],
                     group: ['code'],
@@ -288,9 +291,49 @@ class ItemController {
         }
     }
 
+    async getNews(req, res, next) {
+        try {
+            const items = await Item.findAndCountAll({
+                attributes: [
+                    'code',
+                    [Sequelize.fn('array_agg', Sequelize.col('count')), 'counts'],
+                    [Sequelize.fn('array_agg', Sequelize.col('brand')), 'brand'],
+                    [Sequelize.fn('array_agg', Sequelize.col('model')), 'model'],
+                    [Sequelize.fn('array_agg', Sequelize.col('color')), 'color'],
+                    [Sequelize.fn('array_agg', Sequelize.col('size_eu')), 'size_eu'],
+                    [Sequelize.fn('array_agg', Sequelize.col('size_ru')), 'size_ru'],
+                    [Sequelize.fn('array_agg', Sequelize.col('size_us')), 'size_us'],
+                    [Sequelize.fn('array_agg', Sequelize.col('size_uk')), 'size_uk'],
+                    [Sequelize.fn('array_agg', Sequelize.col('size_sm')), 'size_sm'],
+                    [Sequelize.fn('array_agg', Sequelize.col('size_clo')), 'size_clo'],
+                    [Sequelize.fn('array_agg', Sequelize.col('price')), 'price'],
+                    [Sequelize.fn('array_agg', Sequelize.col('sale')), 'sale'],
+                    [Sequelize.fn('array_agg', Sequelize.col('category')), 'category'],
+                    [Sequelize.fn('array_agg', Sequelize.col('img')), 'img'],
+                    [Sequelize.fn('array_agg', Sequelize.col('name')), 'name'],
+                    [Sequelize.fn('array_agg', Sequelize.col('description')), 'description'],
+                    [Sequelize.fn('array_agg', Sequelize.col('id')), 'id'],
+                    [Sequelize.fn('array_agg', Sequelize.col('createdAt')), 'createdAt']
+                ],
+                order: [
+                    ['createdAt', 'DESC']
+                ],
+                limit: 10,
+                group: ['code', 'name']
+            })
+            let newItems = {
+                count: items.count.length,
+                rows: items.rows
+            }
+            return res.json(newItems)
+        } catch (e) {
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
     async getAll(req, res, next) {
         try {
-            let { category, brands, models, colors, sizes_eu, sizes_ru, sizes_us, sizes_uk, sizes_sm, sizes_clo, priceMin, priceMax, sort, limit, page, in_stock, isModelsSet, isShoesSet, isClothesSet, search } = req.query
+            let { category, brands, models, colors, sizes_eu, sizes_ru, sizes_us, sizes_uk, sizes_sm, sizes_clo, priceMin, priceMax, sort, limit, page, in_stock, isModelsSet, isShoesSet, isClothesSet, search, sale } = req.query
             let categoriesArr = []
             if (category === undefined || category === 'all') {
                 categoriesArr = ['shoes', 'clothes', 'accessories']
@@ -315,7 +358,7 @@ class ItemController {
             page = page || 1
             limit = limit || 18
             let offset = page * limit - limit
-            let searchWord = search ? search.toLowerCase() : ''
+            let searchWord = search && search !== 'all' ? search.toLowerCase() : ''
             const items = await Item.findAndCountAll({
                 attributes: [
                     'code',
@@ -404,57 +447,14 @@ class ItemController {
                                     category: 'all',
                                 }
                             ],
-                            count: count
+                            count: count,
+                            ...(sale !== null && sale !== 'all' && {
+                                sale: { [Op.not]: null },
+                                sale: { [Op.not]: 0 }
+                            })
                         }
                     ]
                 },
-                // where: {
-                //     brand: { [Op.in]: brands.map(item => item.brand) },
-                //     price: {
-                //         [Op.and]: [
-                //             { [Op.gt]: Number(priceMin) - 1 },
-                //             { [Op.lt]: Number(priceMax) + 1 }
-                //         ]
-                //     },
-                //     ...(isShoesSet === 'true' && sizes_eu && {
-                //         size_eu: { [Op.in]: sizes_eu.map(item => item.size_eu) },
-                //     }),
-                //     ...(isShoesSet === 'true' && sizes_ru && {
-                //         size_ru: { [Op.in]: sizes_ru.map(item => item.size_ru) },
-                //     }),
-                //     ...(isShoesSet === 'true' && sizes_us && {
-                //         size_us: { [Op.in]: sizes_us.map(item => item.size_us) },
-                //     }),
-                //     ...(isShoesSet === 'true' && sizes_uk && {
-                //         size_uk: { [Op.in]: sizes_uk.map(item => item.size_uk) },
-                //     }),
-                //     ...(isShoesSet === 'true' && sizes_sm && {
-                //         size_sm: { [Op.in]: sizes_sm.map(item => item.size_sm) },
-                //     }),
-                //     ...(isClothesSet === 'true' && sizes_clo && {
-                //         size_clo: { [Op.in]: sizes_clo.map(item => item.size_clo) },
-                //     }),
-                //     ...(isModelsSet === 'true' && {
-                //         model: { [Op.in]: models.map(item => item.model) },
-                //     }),
-                //     color: { [Op.in]: colors.map(item => item.color) },
-                //     category: { [Op.in]: categoriesArr },
-                //     [Op.or]: [
-                //         {
-                //             category: 'shoes',
-                //         },
-                //         {
-                //             category: 'clothes',
-                //         },
-                //         {
-                //             category: 'accessories'
-                //         },
-                //         {
-                //             category: 'all',
-                //         }
-                //     ],
-                //     count: count
-                // },
                 order: order,
                 group: ['code', 'name'],
                 limit,
@@ -464,10 +464,6 @@ class ItemController {
                 count: items.count.length,
                 rows: items.rows
             }
-            // let newItems = {
-            //     count: items.length,
-            //     rows: items
-            // }
             return res.json(newItems)
         } catch (e) {
             return next(ApiError.badRequest(e.message))
@@ -585,19 +581,23 @@ class ItemController {
         try {
             const { category } = req.query
             if (category) {
-                const brands = await Item.findAll({
+                let brands = await Item.findAll({
                     attributes: [
                         [Sequelize.fn('DISTINCT', Sequelize.col('brand')), 'brand']
                     ],
                     where: { category }
                 })
+                brands = brands.filter(item => item.brand !== 'null')
+                brands = brands.filter(item => item.brand.length > 0)
                 return res.json(brands)
             } else {
-                const brands = await Item.findAll({
+                let brands = await Item.findAll({
                     attributes: [
                         [Sequelize.fn('DISTINCT', Sequelize.col('brand')), 'brand']
                     ]
                 })
+                brands = brands.filter(item => item.brand !== 'null')
+                brands = brands.filter(item => item.brand.length > 0)
                 return res.json(brands)
             }
         } catch (e) {
@@ -607,11 +607,13 @@ class ItemController {
 
     async getModels(req, res, next) {
         try {
-            const models = await Item.findAll({
+            let models = await Item.findAll({
                 attributes: [
                     [Sequelize.fn('DISTINCT', Sequelize.col('model')), 'model']
                 ],
             })
+            models = models.filter(item => item.model !== 'null')
+            models = models.filter(item => item.model.length > 0)
             return res.json(models)
         } catch (e) {
             return next(ApiError.badRequest(e.message))
@@ -625,31 +627,38 @@ class ItemController {
                     [Sequelize.fn('DISTINCT', Sequelize.col('size_eu')), 'size_eu']
                 ]
             })
+            sizesEu = sizesEu.filter(item => item.size_eu !== 'null')
             let sizesRu = await Item.findAll({
                 attributes: [
                     [Sequelize.fn('DISTINCT', Sequelize.col('size_ru')), 'size_ru']
                 ]
             })
+            sizesRu = sizesRu.filter(item => item.size_ru !== 'null')
             let sizesUs = await Item.findAll({
                 attributes: [
                     [Sequelize.fn('DISTINCT', Sequelize.col('size_us')), 'size_us']
                 ]
             })
+            sizesUs = sizesUs.filter(item => item.size_us !== 'null')
             let sizesUk = await Item.findAll({
                 attributes: [
                     [Sequelize.fn('DISTINCT', Sequelize.col('size_uk')), 'size_uk']
                 ]
             })
+            sizesUk = sizesUk.filter(item => item.size_uk !== 'null')
             let sizesSm = await Item.findAll({
                 attributes: [
                     [Sequelize.fn('DISTINCT', Sequelize.col('size_sm')), 'size_sm']
                 ]
             })
+            sizesSm = sizesSm.filter(item => item.size_sm !== 'null')
             let sizesClo = await Item.findAll({
                 attributes: [
                     [Sequelize.fn('DISTINCT', Sequelize.col('size_clo')), 'size_clo']
                 ]
             })
+            sizesClo = sizesClo.filter(item => item.size_clo !== 'null')
+            sizesClo = sizesClo.filter(item => item.size_clo.length > 0)
             let sizes = {
                 sizesEu,
                 sizesRu,

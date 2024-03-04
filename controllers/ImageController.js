@@ -52,7 +52,7 @@ class ImageController {
                 const images = await Image.findAll({ where: { id: { [Op.in]: toDelete } } })
                 if (images) {
                     for (let i of images) {
-                        const filePath = path.resolve(__dirname, '..', 'static', i.img)
+                        const filePath = path.resolve(__dirname, '..', 'static', i.name)
                         fs.unlink(filePath, (e) => {
                             if (e) {
                                 console.log('Ошибка при удалении файла:', e)
