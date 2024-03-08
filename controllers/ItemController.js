@@ -30,6 +30,7 @@ class ItemController {
                 tags
             } = req.body
             let trueSale = sale && sale > 0 ? sale : null
+            if (sale === 0) trueSale = null
             if (req.files && 'img' in req.files) {
                 const { img } = req.files
                 let fileName = uuid.v4() + ".jpg"
@@ -40,7 +41,7 @@ class ItemController {
                     name,
                     description,
                     price,
-                    trueSale,
+                    sale: trueSale,
                     count,
                     size_eu,
                     size_ru,
@@ -63,7 +64,7 @@ class ItemController {
                         name,
                         description,
                         price,
-                        trueSale,
+                        sale: trueSale,
                         count,
                         size_eu,
                         size_ru,
@@ -84,7 +85,7 @@ class ItemController {
                         name,
                         description,
                         price,
-                        trueSale,
+                        sale: trueSale,
                         count: 1,
                         size_eu,
                         size_ru,
@@ -127,13 +128,15 @@ class ItemController {
                 color,
                 tags
             } = req.body
+            let trueSale = sale && sale > 0 ? sale : null
+            if (sale === 0) trueSale = null
             const item = await Item.findOne({ where: { id } })
             if (code) item.code = code
             if (brand) item.brand = brand
             if (name) item.name = name
             if (description) item.description = description
             if (price) item.price = price
-            if (sale) item.sale = sale
+            if (sale) item.sale = trueSale
             if (size_eu) item.size_eu = size_eu
             if (size_ru) item.size_ru = size_ru
             if (size_us) item.size_us = size_us
@@ -431,7 +434,6 @@ class ItemController {
                             ...(isModelsSet === 'true' && {
                                 model: { [Op.in]: models.map(item => item.model) },
                             }),
-                            color: { [Op.in]: colors.map(item => item.color) },
                             category: { [Op.in]: categoriesArr },
                             [Op.or]: [
                                 {
@@ -447,8 +449,13 @@ class ItemController {
                                     category: 'all',
                                 }
                             ],
+                            color: {
+                                [Op.or]: colors.map(i => ({
+                                    [Op.like]: `%${i.color}%`
+                                }))
+                            },
                             count: count,
-                            ...(sale !== null && sale !== 'all' && {
+                            ...(sale === 'sale' && {
                                 sale: { [Op.not]: null },
                                 sale: { [Op.not]: 0 }
                             })
