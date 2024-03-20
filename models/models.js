@@ -18,6 +18,7 @@ const Item = sequelize.define('items', {
     size_clo: {type: DataTypes.STRING},
     // size_type: {type: DataTypes.STRING, allowNull: false},
     category: {type: DataTypes.STRING, allowNull: false},
+    sub_category: {type: DataTypes.STRING},
     model: {type: DataTypes.STRING},
     color: {type: DataTypes.STRING},
     img: {type: DataTypes.STRING},

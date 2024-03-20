@@ -27,10 +27,12 @@ class ItemController {
                 category,
                 model,
                 color,
-                tags
+                tags,
+                sub_category
             } = req.body
             let trueSale = sale && sale > 0 ? sale : null
             if (sale === 0) trueSale = null
+            let trueSubCategory = sub_category && sub_category.length > 0 ? sub_category : null
             if (req.files && 'img' in req.files) {
                 const { img } = req.files
                 let fileName = uuid.v4() + ".jpg"
@@ -50,6 +52,7 @@ class ItemController {
                     size_sm,
                     size_clo,
                     category,
+                    sub_category: trueSubCategory,
                     model,
                     color,
                     img: fileName,
@@ -73,6 +76,7 @@ class ItemController {
                         size_sm,
                         size_clo,
                         category,
+                        sub_category: trueSubCategory,
                         model,
                         color,
                         tags
@@ -94,6 +98,7 @@ class ItemController {
                         size_sm,
                         size_clo,
                         category,
+                        sub_category: trueSubCategory,
                         model,
                         color,
                         tags
@@ -126,10 +131,12 @@ class ItemController {
                 category,
                 model,
                 color,
-                tags
+                tags,
+                sub_category
             } = req.body
             let trueSale = sale && sale > 0 ? sale : null
             if (sale === 0) trueSale = null
+            let trueSubCategory = sub_category && sub_category.length > 0 ? sub_category : null
             const item = await Item.findOne({ where: { id } })
             if (code) item.code = code
             if (brand) item.brand = brand
@@ -144,6 +151,7 @@ class ItemController {
             if (size_sm) item.size_sm = size_sm
             if (size_clo) item.size_clo = size_clo
             if (category) item.category = category
+            if (sub_category) item.sub_category = trueSubCategory
             if (model) item.model = model
             if (color) item.color = color
             if (count) item.count = count
@@ -336,7 +344,7 @@ class ItemController {
 
     async getAll(req, res, next) {
         try {
-            let { category, brands, models, colors, sizes_eu, sizes_ru, sizes_us, sizes_uk, sizes_sm, sizes_clo, priceMin, priceMax, sort, limit, page, in_stock, isModelsSet, isShoesSet, isClothesSet, search, sale } = req.query
+            let { category, sub_category, brands, models, colors, sizes_eu, sizes_ru, sizes_us, sizes_uk, sizes_sm, sizes_clo, priceMin, priceMax, sort, limit, page, in_stock, isModelsSet, isShoesSet, isClothesSet, search, sale } = req.query
             let categoriesArr = []
             if (category === undefined || category === 'all') {
                 categoriesArr = ['shoes', 'clothes', 'accessories']
@@ -458,6 +466,9 @@ class ItemController {
                             ...(sale === 'sale' && {
                                 sale: { [Op.not]: null },
                                 sale: { [Op.not]: 0 }
+                            }),
+                            ...(sub_category && {
+                                sub_category: sub_category
                             })
                         }
                     ]
