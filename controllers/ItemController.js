@@ -344,7 +344,7 @@ class ItemController {
 
     async getAll(req, res, next) {
         try {
-            let { category, sub_category, brands, models, colors, sizes_eu, sizes_ru, sizes_us, sizes_uk, sizes_sm, sizes_clo, priceMin, priceMax, sort, limit, page, in_stock, isModelsSet, isShoesSet, isClothesSet, search, sale } = req.query
+            let { category, brands, models, colors, sizes_eu, sizes_ru, sizes_us, sizes_uk, sizes_sm, sizes_clo, priceMin, priceMax, sort, limit, page, in_stock, isModelsSet, isShoesSet, isClothesSet, search, sale, subcats } = req.query
             let categoriesArr = []
             if (category === undefined || category === 'all') {
                 categoriesArr = ['shoes', 'clothes', 'accessories']
@@ -366,6 +366,9 @@ class ItemController {
             } else {
                 order.push(['name', 'ASC'])
             }
+            let subcatsNum = subcats.map(item => item.toString())
+            if (subcatsNum.length === 0) subcatsNum = null
+            if (subcatsNum.includes('1')) subcatsNum = null
             page = page || 1
             limit = limit || 18
             let offset = page * limit - limit
@@ -467,8 +470,8 @@ class ItemController {
                                 sale: { [Op.not]: null },
                                 sale: { [Op.not]: 0 }
                             }),
-                            ...(sub_category && {
-                                sub_category: sub_category
+                            ...(subcatsNum && {
+                                sub_category: { [Op.in]: subcatsNum }
                             })
                         }
                     ]
