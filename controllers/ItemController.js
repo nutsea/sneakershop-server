@@ -178,6 +178,309 @@ class ItemController {
         }
     }
 
+    async createMany(req, res, next) {
+        try {
+            let {
+                sizes_count,
+                code,
+                brand,
+                name,
+                description,
+                prices,
+                sales,
+                counts,
+                sizes_eu,
+                sizes_ru,
+                sizes_us,
+                sizes_uk,
+                sizes_sm,
+                sizes_clo,
+                category,
+                model,
+                color,
+                tags,
+                sub_category
+            } = req.body
+
+            prices = JSON.parse(prices)
+            sales = JSON.parse(sales)
+            counts = JSON.parse(counts)
+            sizes_eu = JSON.parse(sizes_eu)
+            sizes_ru = JSON.parse(sizes_ru)
+            sizes_us = JSON.parse(sizes_us)
+            sizes_uk = JSON.parse(sizes_uk)
+            sizes_sm = JSON.parse(sizes_sm)
+            sizes_clo = JSON.parse(sizes_clo)
+
+            let fileName = null
+            if (req.files && 'img' in req.files) {
+                const { img } = req.files
+                fileName = uuid.v4() + ".jpg"
+                img.mv(path.resolve(__dirname, '..', 'static', fileName))
+            }
+
+            let items = []
+
+            for (let i = 0; i < sizes_count; i++) {
+                if (prices[i] && counts[i]) {
+                    if ((category === 'shoes' && sizes_eu[i] && sizes_ru[i] && sizes_us[i] && sizes_uk[i] && sizes_sm[i]) || (category !== 'shoes' && sizes_clo[i])) {
+                        let trueSale = sales[i] && sales[i] > 0 ? sales[i] : null
+                        if (sales[i] === 0) trueSale = null
+                        let trueSubCategory = sub_category && sub_category.length > 0 ? sub_category : null
+                        if (counts[i]) {
+                            const item = await Item.create({
+                                code,
+                                brand,
+                                name,
+                                description,
+                                price: prices[i],
+                                sale: trueSale,
+                                count: counts[i],
+                                size_eu: sizes_eu[i] ? sizes_eu[i] : 0,
+                                size_ru: sizes_ru[i] ? sizes_ru[i] : 0,
+                                size_us: sizes_us[i] ? sizes_us[i] : 0,
+                                size_uk: sizes_uk[i] ? sizes_uk[i] : 0,
+                                size_sm: sizes_sm[i] ? sizes_sm[i] : 0,
+                                size_clo: sizes_clo[i] ? sizes_clo[i] : 0,
+                                category,
+                                sub_category: trueSubCategory,
+                                model,
+                                color,
+                                img: fileName,
+                                tags
+                            })
+                            items.push(item)
+                        } else {
+                            const item = await Item.create({
+                                code,
+                                brand,
+                                name,
+                                description,
+                                price: prices[i],
+                                sale: trueSale,
+                                count: 1,
+                                size_eu: sizes_eu[i],
+                                size_ru: sizes_ru[i],
+                                size_us: sizes_us[i],
+                                size_uk: sizes_uk[i],
+                                size_sm: sizes_sm[i],
+                                size_clo: sizes_clo[i],
+                                category,
+                                sub_category: trueSubCategory,
+                                model,
+                                color,
+                                img: fileName,
+                                tags
+                            })
+                            items.push(item)
+                        }
+                    }
+                }
+            }
+            return res.json(items)
+        } catch (e) {
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async updateMany(req, res, next) {
+        try {
+            let {
+                sizes_count,
+                ids,
+                code,
+                brand,
+                name,
+                description,
+                prices,
+                sales,
+                counts,
+                sizes_eu,
+                sizes_ru,
+                sizes_us,
+                sizes_uk,
+                sizes_sm,
+                sizes_clo,
+                category,
+                model,
+                color,
+                tags,
+                sub_category
+            } = req.body
+
+            ids = JSON.parse(ids)
+            prices = JSON.parse(prices)
+            sales = JSON.parse(sales)
+            counts = JSON.parse(counts)
+            sizes_eu = JSON.parse(sizes_eu)
+            sizes_ru = JSON.parse(sizes_ru)
+            sizes_us = JSON.parse(sizes_us)
+            sizes_uk = JSON.parse(sizes_uk)
+            sizes_sm = JSON.parse(sizes_sm)
+            sizes_clo = JSON.parse(sizes_clo)
+
+            let fileName = null
+            if (req.files && 'img' in req.files) {
+                const { img } = req.files
+                fileName = uuid.v4() + ".jpg"
+                img.mv(path.resolve(__dirname, '..', 'static', fileName))
+                const filePath = path.resolve(__dirname, '..', 'static', item.img)
+                fs.unlink(filePath, (e) => {
+                    if (e) {
+                        console.log('Ошибка при удалении файла:', e)
+                    } else {
+                        console.log('Файл успешно удален')
+                    }
+                })
+            }
+
+            let items = []
+
+            for (let i = 0; i < sizes_count; i++) {
+                if (prices[i] && counts[i]) {
+                    if ((category === 'shoes' && sizes_eu[i] && sizes_ru[i] && sizes_us[i] && sizes_uk[i] && sizes_sm[i]) || (category !== 'shoes' && sizes_clo[i])) {
+                        let trueSale = sales[i] && sales[i] > 0 ? sales[i] : null
+                        if (sales[i] === 0) trueSale = null
+                        let trueSubCategory = sub_category && sub_category.length > 0 ? sub_category : null
+                        const item = await Item.findOne({ where: { id: ids[i] } })
+                        if (code) item.code = code
+                        if (brand) item.brand = brand
+                        if (name) item.name = name
+                        if (description) item.description = description
+                        if (prices[i]) item.price = prices[i]
+                        if (sales[i]) item.sale = trueSale
+                        if (sizes_eu[i]) item.size_eu = sizes_eu[i]
+                        if (sizes_ru[i]) item.size_ru = sizes_ru[i]
+                        if (sizes_us[i]) item.size_us = sizes_us[i]
+                        if (sizes_uk[i]) item.size_uk = sizes_uk[i]
+                        if (sizes_sm[i]) item.size_sm = sizes_sm[i]
+                        if (sizes_clo[i]) item.size_clo = sizes_clo[i]
+                        if (category) item.category = category
+                        if (sub_category) item.sub_category = trueSubCategory
+                        if (model) item.model = model
+                        if (color) item.color = color
+                        if (counts) item.count = counts[i]
+                        else item.count = 1
+                        if (tags) item.tags = tags
+                        if (fileName) item.img = fileName
+                        await item.save()
+                        items.push(item)
+                    }
+                }
+            }
+            return res.json(items)
+        } catch (e) {
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
+    async createSame(req, res, next) {
+        try {
+            let {
+                sizes_count,
+                add_sizes_count,
+                code,
+                brand,
+                name,
+                description,
+                prices,
+                sales,
+                counts,
+                sizes_eu,
+                sizes_ru,
+                sizes_us,
+                sizes_uk,
+                sizes_sm,
+                sizes_clo,
+                category,
+                model,
+                color,
+                tags,
+                sub_category,
+                old_filename
+            } = req.body
+
+            prices = JSON.parse(prices)
+            sales = JSON.parse(sales)
+            counts = JSON.parse(counts)
+            sizes_eu = JSON.parse(sizes_eu)
+            sizes_ru = JSON.parse(sizes_ru)
+            sizes_us = JSON.parse(sizes_us)
+            sizes_uk = JSON.parse(sizes_uk)
+            sizes_sm = JSON.parse(sizes_sm)
+            sizes_clo = JSON.parse(sizes_clo)
+
+            let fileName = null
+            if (req.files && 'img' in req.files) {
+                const { img } = req.files
+                fileName = uuid.v4() + ".jpg"
+                img.mv(path.resolve(__dirname, '..', 'static', fileName))
+            }
+
+            let items = []
+
+            for (let i = sizes_count; i < sizes_count + add_sizes_count; i++) {
+                if (prices[i] && counts[i]) {
+                    if ((category === 'shoes' && sizes_eu[i] && sizes_ru[i] && sizes_us[i] && sizes_uk[i] && sizes_sm[i]) || (category !== 'shoes' && sizes_clo[i])) {
+                        let trueSale = sales[i] && sales[i] > 0 ? sales[i] : null
+                        if (sales[i] === 0) trueSale = null
+                        let trueSubCategory = sub_category && sub_category.length > 0 ? sub_category : null
+                        if (counts[i]) {
+                            const item = await Item.create({
+                                code,
+                                brand,
+                                name,
+                                description,
+                                price: prices[i],
+                                sale: trueSale,
+                                count: counts[i],
+                                size_eu: sizes_eu[i] ? sizes_eu[i] : 0,
+                                size_ru: sizes_ru[i] ? sizes_ru[i] : 0,
+                                size_us: sizes_us[i] ? sizes_us[i] : 0,
+                                size_uk: sizes_uk[i] ? sizes_uk[i] : 0,
+                                size_sm: sizes_sm[i] ? sizes_sm[i] : 0,
+                                size_clo: sizes_clo[i] ? sizes_clo[i] : 0,
+                                category,
+                                sub_category: trueSubCategory,
+                                model,
+                                color,
+                                img: !fileName ? old_filename : fileName,
+                                tags
+                            })
+                            items.push(item)
+                        } else {
+                            const item = await Item.create({
+                                code,
+                                brand,
+                                name,
+                                description,
+                                price: prices[i],
+                                sale: trueSale,
+                                count: 1,
+                                size_eu: sizes_eu[i],
+                                size_ru: sizes_ru[i],
+                                size_us: sizes_us[i],
+                                size_uk: sizes_uk[i],
+                                size_sm: sizes_sm[i],
+                                size_clo: sizes_clo[i],
+                                category,
+                                sub_category: trueSubCategory,
+                                model,
+                                color,
+                                img: !fileName ? old_filename : fileName,
+                                tags
+                            })
+                            items.push(item)
+                        }
+                    }
+                }
+            }
+            return res.json(items)
+        } catch (e) {
+            return next(ApiError.badRequest(e.message))
+        }
+    }
+
     async buyItems(req, res, next) {
         try {
             const { id, count } = req.body
@@ -366,7 +669,8 @@ class ItemController {
             } else {
                 order.push(['name', 'ASC'])
             }
-            let subcatsNum = subcats.map(item => item.toString())
+            let subcatsNum = null
+            if (isArray(subcats)) subcatsNum = subcats.map(item => item.toString())
             if (subcatsNum.length === 0) subcatsNum = null
             if (subcatsNum.includes('1')) subcatsNum = null
             page = page || 1
