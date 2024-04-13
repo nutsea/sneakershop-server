@@ -284,6 +284,7 @@ class ItemController {
     }
 
     async updateMany(req, res, next) {
+        console.log(111)
         try {
             let {
                 sizes_count,
@@ -324,14 +325,6 @@ class ItemController {
                 const { img } = req.files
                 fileName = uuid.v4() + ".jpg"
                 img.mv(path.resolve(__dirname, '..', 'static', fileName))
-                const filePath = path.resolve(__dirname, '..', 'static', item.img)
-                fs.unlink(filePath, (e) => {
-                    if (e) {
-                        console.log('Ошибка при удалении файла:', e)
-                    } else {
-                        console.log('Файл успешно удален')
-                    }
-                })
             }
 
             let items = []
@@ -362,8 +355,19 @@ class ItemController {
                         if (counts) item.count = counts[i]
                         else item.count = 1
                         if (tags) item.tags = tags
-                        if (fileName) item.img = fileName
+                        if (fileName) {
+                            const filePath = path.resolve(__dirname, '..', 'static', item.img)
+                            fs.unlink(filePath, (e) => {
+                                if (e) {
+                                    console.log('Ошибка при удалении файла:', e)
+                                } else {
+                                    console.log('Файл успешно удален')
+                                }
+                            })
+                            item.img = fileName
+                        }
                         await item.save()
+                        console.log(item.code)
                         items.push(item)
                     }
                 }
