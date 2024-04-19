@@ -223,7 +223,7 @@ class ItemController {
 
             for (let i = 0; i < sizes_count; i++) {
                 if (prices[i] && counts[i]) {
-                    if ((category === 'shoes' && sizes_eu[i] && sizes_ru[i] && sizes_us[i] && sizes_uk[i] && sizes_sm[i]) || (category !== 'shoes' && sizes_clo[i])) {
+                    if ((category === 'shoes' && (sizes_eu[i] || sizes_ru[i] || sizes_us[i] || sizes_uk[i] || sizes_sm[i])) || (category !== 'shoes' && sizes_clo[i])) {
                         let trueSale = sales[i] && sales[i] > 0 ? sales[i] : null
                         if (sales[i] === 0) trueSale = null
                         let trueSubCategory = sub_category && sub_category.length > 0 ? sub_category : null
@@ -236,12 +236,12 @@ class ItemController {
                                 price: prices[i],
                                 sale: trueSale,
                                 count: counts[i],
-                                size_eu: sizes_eu[i] ? sizes_eu[i] : 0,
-                                size_ru: sizes_ru[i] ? sizes_ru[i] : 0,
-                                size_us: sizes_us[i] ? sizes_us[i] : 0,
-                                size_uk: sizes_uk[i] ? sizes_uk[i] : 0,
-                                size_sm: sizes_sm[i] ? sizes_sm[i] : 0,
-                                size_clo: sizes_clo[i] ? sizes_clo[i] : 0,
+                                size_eu: sizes_eu[i] ? sizes_eu[i] : null,
+                                size_ru: sizes_ru[i] ? sizes_ru[i] : null,
+                                size_us: sizes_us[i] ? sizes_us[i] : null,
+                                size_uk: sizes_uk[i] ? sizes_uk[i] : null,
+                                size_sm: sizes_sm[i] ? sizes_sm[i] : null,
+                                size_clo: sizes_clo[i] ? sizes_clo[i] : null,
                                 category,
                                 sub_category: trueSubCategory,
                                 model,
@@ -284,7 +284,6 @@ class ItemController {
     }
 
     async updateMany(req, res, next) {
-        console.log(111)
         try {
             let {
                 sizes_count,
@@ -330,8 +329,8 @@ class ItemController {
             let items = []
 
             for (let i = 0; i < sizes_count; i++) {
-                if (prices[i] && counts[i]) {
-                    if ((category === 'shoes' && sizes_eu[i] && sizes_ru[i] && sizes_us[i] && sizes_uk[i] && sizes_sm[i]) || (category !== 'shoes' && sizes_clo[i])) {
+                if (prices[i] && (counts[i] || counts[i] === 0)) {
+                    if (((category === 'shoes' && (sizes_eu[i] || sizes_ru[i] || sizes_us[i] || sizes_uk[i] || sizes_sm[i]))) || (category !== 'shoes' && sizes_clo[i])) {
                         let trueSale = sales[i] && sales[i] > 0 ? sales[i] : null
                         if (sales[i] === 0) trueSale = null
                         let trueSubCategory = sub_category && sub_category.length > 0 ? sub_category : null
@@ -341,13 +340,13 @@ class ItemController {
                         if (name) item.name = name
                         if (description) item.description = description
                         if (prices[i]) item.price = prices[i]
-                        if (sales[i]) item.sale = trueSale
-                        if (sizes_eu[i]) item.size_eu = sizes_eu[i]
-                        if (sizes_ru[i]) item.size_ru = sizes_ru[i]
-                        if (sizes_us[i]) item.size_us = sizes_us[i]
-                        if (sizes_uk[i]) item.size_uk = sizes_uk[i]
-                        if (sizes_sm[i]) item.size_sm = sizes_sm[i]
-                        if (sizes_clo[i]) item.size_clo = sizes_clo[i]
+                        item.sale = trueSale
+                        item.size_eu = sizes_eu[i]
+                        item.size_ru = sizes_ru[i]
+                        item.size_us = sizes_us[i]
+                        item.size_uk = sizes_uk[i]
+                        item.size_sm = sizes_sm[i]
+                        item.size_clo = sizes_clo[i]
                         if (category) item.category = category
                         if (sub_category) item.sub_category = trueSubCategory
                         if (model) item.model = model
@@ -367,7 +366,6 @@ class ItemController {
                             item.img = fileName
                         }
                         await item.save()
-                        console.log(item.code)
                         items.push(item)
                     }
                 }
@@ -425,7 +423,7 @@ class ItemController {
 
             for (let i = sizes_count; i < sizes_count + add_sizes_count; i++) {
                 if (prices[i] && counts[i]) {
-                    if ((category === 'shoes' && sizes_eu[i] && sizes_ru[i] && sizes_us[i] && sizes_uk[i] && sizes_sm[i]) || (category !== 'shoes' && sizes_clo[i])) {
+                    if ((category === 'shoes' && (sizes_eu[i] || sizes_ru[i] || sizes_us[i] || sizes_uk[i] || sizes_sm[i])) || (category !== 'shoes' && sizes_clo[i])) {
                         let trueSale = sales[i] && sales[i] > 0 ? sales[i] : null
                         if (sales[i] === 0) trueSale = null
                         let trueSubCategory = sub_category && sub_category.length > 0 ? sub_category : null
@@ -438,12 +436,12 @@ class ItemController {
                                 price: prices[i],
                                 sale: trueSale,
                                 count: counts[i],
-                                size_eu: sizes_eu[i] ? sizes_eu[i] : 0,
-                                size_ru: sizes_ru[i] ? sizes_ru[i] : 0,
-                                size_us: sizes_us[i] ? sizes_us[i] : 0,
-                                size_uk: sizes_uk[i] ? sizes_uk[i] : 0,
-                                size_sm: sizes_sm[i] ? sizes_sm[i] : 0,
-                                size_clo: sizes_clo[i] ? sizes_clo[i] : 0,
+                                size_eu: sizes_eu[i] ? sizes_eu[i] : null,
+                                size_ru: sizes_ru[i] ? sizes_ru[i] : null,
+                                size_us: sizes_us[i] ? sizes_us[i] : null,
+                                size_uk: sizes_uk[i] ? sizes_uk[i] : null,
+                                size_sm: sizes_sm[i] ? sizes_sm[i] : null,
+                                size_clo: sizes_clo[i] ? sizes_clo[i] : null,
                                 category,
                                 sub_category: trueSubCategory,
                                 model,
@@ -524,9 +522,10 @@ class ItemController {
     async getCart(req, res, next) {
         try {
             const { idArr } = req.query
+            let numbers = idArr.map(i => Number(i.id))
             const items = await Item.findAll({
                 where: {
-                    id: { [Op.in]: idArr }
+                    id: { [Op.in]: numbers }
                 }
             })
             return res.json(items)
@@ -674,8 +673,8 @@ class ItemController {
                 order.push(['name', 'ASC'])
             }
             let subcatsNum = null
-            if (isArray(subcats)) subcatsNum = subcats.map(item => item.toString())
-            if (subcatsNum.length === 0) subcatsNum = null
+            if (Array.isArray(subcats)) subcatsNum = subcats.map(item => item.toString())
+            if (subcatsNum && subcatsNum.length === 0) subcatsNum = null
             if (subcatsNum.includes('1')) subcatsNum = null
             page = page || 1
             limit = limit || 18
@@ -889,7 +888,7 @@ class ItemController {
             })
             return res.json(combs)
         } catch (e) {
-
+            return next(ApiError.badRequest(e.message))
         }
     }
 
@@ -987,7 +986,9 @@ class ItemController {
                 ]
             })
             sizesClo = sizesClo.filter(item => item.size_clo !== 'null')
-            sizesClo = sizesClo.filter(item => item.size_clo.length > 0)
+            for (let i of sizesClo) {
+            }
+            sizesClo = sizesClo.filter(item => item.size_clo && item.size_clo.length > 0)
             let sizes = {
                 sizesEu,
                 sizesRu,
@@ -1096,9 +1097,10 @@ class ItemController {
     async delete(req, res, next) {
         const { id } = req.query
         const item = await Item.findOne({ where: { id } })
+        const same_items = await Item.findAll({ where: { code: item.code } })
         const images = await Image.findAll({ where: { item_id: id.toString() } })
         try {
-            if (item.img) {
+            if (item.img && same_items.length <= 1) {
                 const filePath = path.resolve(__dirname, '..', 'static', item.img)
                 fs.unlink(filePath, (e) => {
                     if (e) {
@@ -1109,7 +1111,7 @@ class ItemController {
                 })
             }
             await item.destroy()
-            if (images) {
+            if (images && same_items.length <= 1) {
                 for (let i of images) {
                     const filePath = path.resolve(__dirname, '..', 'static', i.img)
                     fs.unlink(filePath, (e) => {
@@ -1135,9 +1137,10 @@ class ItemController {
                 id: { [Op.in]: idArr }
             }
         })
+        const same_items = await Item.findAll({ where: { code: items[0].code } })
         for (let item of items) {
             try {
-                if (item.img) {
+                if (item.img && items.length === same_items.length) {
                     const filePath = path.resolve(__dirname, '..', 'static', item.img)
                     fs.unlink(filePath, (e) => {
                         if (e) {
@@ -1149,7 +1152,7 @@ class ItemController {
                 }
                 await item.destroy()
                 const images = await Image.findAll({ where: { item_id: item.id.toString() } })
-                if (images) {
+                if (images && items.length === same_items.length) {
                     for (let i of images) {
                         const filePath = path.resolve(__dirname, '..', 'static', i.img)
                         fs.unlink(filePath, (e) => {
